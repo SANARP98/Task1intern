@@ -35,6 +35,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#ifndef portTICK_PERIOD_MS
+#define portTICK_PERIOD_MS    ( 1000UL / configTICK_RATE_HZ )
+#endif
+
+#define PRODUCER_STACK_WORDS   configMINIMAL_STACK_SIZE
+#define CONSUMER_STACK_WORDS   configMINIMAL_STACK_SIZE
+#define TEST_STACK_WORDS       configMINIMAL_STACK_SIZE
+
 /* ============================================================================
  * CONFIGURATION
  * ============================================================================ */
@@ -177,7 +185,8 @@ void ExampleTask2(void *pvParameters)
     Data_t receivedData;
     BaseType_t queueStatus;
     
-    printf("ExampleTask2: Started with basePriority=%u\n", basePriority);
+    printf("ExampleTask2: Started with basePriority=%lu\n",
+           (unsigned long)basePriority);
     
     // Infinite task loop
     for (;;) {
@@ -209,10 +218,10 @@ void ExampleTask2(void *pvParameters)
                         currentPriority = basePriority + 2;
                         vTaskPrioritySet(NULL, currentPriority);
                         priorityIncreased = true;
-                        printf("[T2 @ %lu ms] ⬆️  Priority increased: %u → %u\n",
+                        printf("[T2 @ %lu ms] ⬆️  Priority increased: %lu → %lu\n",
                                xTaskGetTickCount() * portTICK_PERIOD_MS,
-                               basePriority,
-                               currentPriority);
+                               (unsigned long)basePriority,
+                               (unsigned long)currentPriority);
                     } else {
                         printf("[T2 @ %lu ms] ℹ️  Priority already increased (no action)\n",
                                xTaskGetTickCount() * portTICK_PERIOD_MS);
@@ -224,10 +233,10 @@ void ExampleTask2(void *pvParameters)
                         currentPriority = basePriority;
                         vTaskPrioritySet(NULL, currentPriority);
                         priorityIncreased = false;
-                        printf("[T2 @ %lu ms] ⬇️  Priority decreased: %u → %u\n",
+                        printf("[T2 @ %lu ms] ⬇️  Priority decreased: %lu → %lu\n",
                                xTaskGetTickCount() * portTICK_PERIOD_MS,
-                               basePriority + 2,
-                               basePriority);
+                               (unsigned long)(basePriority + 2U),
+                               (unsigned long)basePriority);
                     } else {
                         printf("[T2 @ %lu ms] ℹ️  Priority not increased (no action)\n",
                                xTaskGetTickCount() * portTICK_PERIOD_MS);
@@ -396,7 +405,7 @@ int main(void)
         printf("   Check: configTOTAL_HEAP_SIZE in FreeRTOSConfig.h\n");
         for (;;);  // Halt
     }
-    printf("✅ [Main] Queue1 created successfully (size=5, itemSize=%u bytes)\n", 
+    printf("✅ [Main] Queue1 created successfully (size=5, itemSize=%zu bytes)\n",
            sizeof(Data_t));
     
     /* -----------------------------------------------------------------------
@@ -408,7 +417,7 @@ int main(void)
     status = xTaskCreate(
         ExampleTask1,           // Task function pointer
         "Producer",             // Task name (for debugging)
-        1024,                   // Stack size in words
+        PRODUCER_STACK_WORDS,   // Stack size in words (adjust per target)
         NULL,                   // Task parameter (unused)
         1,                      // Priority (1 = low)
         &TaskHandle_1           // Task handle
@@ -419,7 +428,8 @@ int main(void)
         printf("   Possible cause: Insufficient heap memory\n");
         for (;;);  // Halt
     }
-    printf("✅ [Main] ExampleTask1 created (Priority=1, Stack=1024 words)\n");
+    printf("✅ [Main] ExampleTask1 created (Priority=1, Stack=%u words)\n",
+           (unsigned)PRODUCER_STACK_WORDS);
     
     /* -----------------------------------------------------------------------
      * Step 3: Create ExampleTask2 (Consumer)
@@ -430,7 +440,7 @@ int main(void)
     status = xTaskCreate(
         ExampleTask2,           // Task function pointer
         "Consumer",             // Task name (for debugging)
-        1024,                   // Stack size in words
+        CONSUMER_STACK_WORDS,   // Stack size in words (adjust per target)
         NULL,                   // Task parameter (unused)
         2,                      // Priority (2 = medium)
         &TaskHandle_2           // Task handle
@@ -441,7 +451,8 @@ int main(void)
         printf("   Possible cause: Insufficient heap memory\n");
         for (;;);  // Halt
     }
-    printf("✅ [Main] ExampleTask2 created (Priority=2, Stack=1024 words)\n");
+    printf("✅ [Main] ExampleTask2 created (Priority=2, Stack=%u words)\n",
+           (unsigned)CONSUMER_STACK_WORDS);
     
     /* -----------------------------------------------------------------------
      * Step 4: Create TestTask (Optional - only if enabled)
@@ -453,7 +464,7 @@ int main(void)
     status = xTaskCreate(
         TestTask,               // Task function pointer
         "TestTask",             // Task name
-        1024,                   // Stack size in words
+        TEST_STACK_WORDS,       // Stack size in words (adjust per target)
         NULL,                   // Task parameter (unused)
         3,                      // Priority (3 = high)
         NULL                    // Don't need handle
