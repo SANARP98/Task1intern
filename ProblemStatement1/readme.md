@@ -113,34 +113,72 @@ IF dataID == 1:
 
 ## 🛠️ Build Instructions
 
-### Option 1: FreeRTOS Windows/POSIX Simulator (Recommended)
+### Option 0: Docker container (Fastest path)
+
+Run the entire POSIX simulator workflow inside a disposable Ubuntu 22.04
+container. The image installs the required toolchain, clones the upstream
+FreeRTOS kernel, injects this project’s sources, builds the CMake example, and
+executes the demo automatically.
+
+```bash
+# From the repository root
+cd ProblemStatement1/container
+
+# Build the container image and run the example
+./run.sh
+
+# (Optional) Execute the automated regression script inside the container
+RUN_AUTOMATED_TESTS=1 ./run.sh
+```
+
+Environment variables you can override:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `IMAGE_NAME` | Docker image tag used by `run.sh` | `freertos-posix-sim` |
+| `RUN_AUTOMATED_TESTS` | Pass `-DRUN_AUTOMATED_TESTS` to the build | `0` |
+| `KERNEL_REPO` | Alternate FreeRTOS kernel fork | Upstream GitHub |
+| `KERNEL_BRANCH` | Kernel branch to clone | `main` |
+
+> [!NOTE]
+> The container mounts this repository read-only at `/project`, so your local
+> sources never change during the run. Build artifacts stay inside the container
+> and vanish when the container exits.
+
+### Option 1: POSIX simulator using FreeRTOS-Kernel (Recommended)
 
 **Requirements:**
-- GCC compiler
-- FreeRTOS kernel source
+- GCC compiler and CMake
+- [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
 
 **Steps:**
-1. Download FreeRTOS kernel:
+1. Clone the FreeRTOS kernel and copy the sources from this repository:
    ```bash
    git clone https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+   cp /path/to/ProblemStatement1/main.c FreeRTOS-Kernel/examples/cmake_example/main.c
+   cp /path/to/ProblemStatement1/FreeRTOSConfig.h FreeRTOS-Kernel/examples/template_configuration/FreeRTOSConfig.h
    ```
 
-2. Navigate to simulator demo:
+2. Configure the provided CMake example with the POSIX port:
    ```bash
-   cd FreeRTOS-Kernel/Demo/Posix_GCC/
-   # or
-   cd FreeRTOS-Kernel/Demo/WIN32-MSVC/
+   cd FreeRTOS-Kernel/examples/cmake_example
+   cmake -B build -S . -DFREERTOS_PORT=GCC_POSIX
+   cmake --build build
    ```
 
-3. Replace `main.c` with this implementation
-
-4. Copy `FreeRTOSConfig.h` to demo directory
-
-5. Build and run:
+3. Run the executable:
    ```bash
-   make clean
-   make
-   ./build/posix_demo
+   ./build/example
+   ```
+
+   Use `Ctrl+C` to terminate the demo once you have captured the desired log output.
+
+4. (Optional) Enable the automated functional test sequence by rebuilding with the
+   `RUN_AUTOMATED_TESTS` define:
+   ```bash
+   cmake -B build_tests -S . -DFREERTOS_PORT=GCC_POSIX -DCMAKE_C_FLAGS="-DRUN_AUTOMATED_TESTS"
+   cmake --build build_tests
+   ./build_tests/example
    ```
 
 ---
