@@ -81,11 +81,13 @@
 
 /* For Windows/POSIX simulator */
 #ifdef _WIN32
+    #undef configUSE_PORT_OPTIMISED_TASK_SELECTION
     #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #endif
 
 /* For STM32 or ARM Cortex-M */
 #ifdef __ARM_ARCH
+    #undef configUSE_PORT_OPTIMISED_TASK_SELECTION
     #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
     /* Add ARM-specific configurations here if needed */
 #endif

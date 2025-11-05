@@ -32,7 +32,7 @@ cp "${PROJECT_DIR}/ProblemStatement1/FreeRTOSConfig.h" \
 log "Configuring CMake project..."
 cmake -B "${BUILD_DIR}" -S /workspace/FreeRTOS-Kernel/examples/cmake_example \
     -DFREERTOS_PORT=GCC_POSIX \
-    $([ "${AUTOMATED}" != "0" ] && printf '%s' "-DCMAKE_C_FLAGS=-DRUN_AUTOMATED_TESTS")
+    -DCMAKE_C_FLAGS="-Wno-conversion $([ "${AUTOMATED}" != "0" ] && printf '%s' "-DRUN_AUTOMATED_TESTS")"
 
 log "Building example..."
 cmake --build "${BUILD_DIR}"
